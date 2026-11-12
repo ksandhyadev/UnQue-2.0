@@ -1,6 +1,6 @@
-# PM2 ecosystem file for UnQue 2.0
-# Start with:  pm2 start ecosystem.config.cjs
-# or:          pm2 start ecosystem.config.cjs --env production
+// PM2 ecosystem file for UnQue 2.0
+// Start with:  pm2 start ecosystem.config.cjs
+// or:          pm2 start ecosystem.config.cjs --env production
 
 module.exports = {
   apps: [

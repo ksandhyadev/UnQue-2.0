@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>UnQue 2.0 - Live Cloud API Test Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --badge-post: #f59e0b;
+      --badge-get: #10b981;
+      --badge-patch: #8b5cf6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    h1 { font-size: 1.8rem; font-weight: 700; color: #60a5fa; }
+    .status-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--success);
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: var(--card-bg); border: 1px solid var(--border); }
+    button.secondary:hover { background: #334155; }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .step-title { font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge-post { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+    .badge-get { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .badge-patch { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid #8b5cf6; }
+    .badge-new { background: #ec4899; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; }
+    .endpoint { font-family: monospace; font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+    pre {
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      max-height: 250px;
+    }
+    .status-code {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+    .status-200, .status-201 { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .status-404 { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .status-waiting { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+    .state-panel { position: sticky; top: 24px; }
+    .state-item { margin-bottom: 12px; }
+    .state-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    .state-value { font-family: monospace; font-size: 0.8rem; word-break: break-all; background: #0b1120; padding: 6px; border-radius: 4px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>UnQue 2.0 - Appointment System</h1>
+        <p style="color: var(--muted); font-size: 0.9rem;">Live Cloud API Test & Verification Console (AWS EC2)</p>
+      </div>
+      <div class="status-pill">
+        <span class="dot"></span> EC2 Backend Online :5001
+      </div>
+    </header>
+
+    <div class="controls">
+      <button onclick="runFullFlow()">▶ Run Full 10-Step Flow Automatically</button>
+      <button class="secondary" onclick="resetState()">↺ Reset State</button>
+    </div>
+
+    <div class="grid">
+      <!-- Steps Column -->
+      <div id="steps-container"></div>
+
+      <!-- Live Session State Column -->
+      <div>
+        <div class="card state-panel">
+          <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: #60a5fa;">Session State Variables</h3>
+          <div class="state-item">
+            <div class="state-label">Student A1 ID</div>
+            <div class="state-value" id="state-a1-id">None</div>
+          </div>
+          <div class="state-item">
+            <div class="state-label">Student A1 Token</div>
+            <div class="state-value" id="state-a1-token">None</div>
+          </div>
+          <div class="state-item">
+            <div class="state-label">Professor P1 ID</div>
+            <div class="state-value" id="state-p1-id">None</div>
+          </div>
+          <div class="state-item">
+            <div class="state-label">Professor P1 Token</div>
+            <div class="state-value" id="state-p1-token">None</div>
+          </div>
+          <div class="state-item">
+            <div class="state-label">Free Slot ID (For Update API)</div>
+            <div class="state-value" id="state-slot-id">None</div>
+          </div>
+          <div class="state-item">
+            <div class="state-label">Student A2 Token</div>
+            <div class="state-value" id="state-a2-token">None</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      studentA1_id: null,
+      studentA1_token: null,
+      profP1_id: null,
+      profP1_token: null,
+      free_slot_id: null,
+      studentA2_id: null,
+      studentA2_token: null
+    };
+
+    const steps = [
+      { id: 1, name: "Step 1: Student A1 Authenticates", method: "POST", endpoint: "/users/register & /users/login", badge: "badge-post" },
+      { id: 2, name: "Step 2: Professor P1 Authenticates", method: "POST", endpoint: "/users/register & /users/login", badge: "badge-post" },
+      { id: 3, name: "Step 3: Professor P1 Specifies Free Slots", method: "POST", endpoint: "/professor/availability", badge: "badge-post" },
+      { id: 4, name: "Step 4: Student A1 Views Available Slots", method: "GET", endpoint: "/general/professor/:id/availability", badge: "badge-get" },
+      { id: 5, name: "Step 5: Student A1 Books Appointment (T1)", method: "POST", endpoint: "/general/book", badge: "badge-post" },
+      { id: 6, name: "Step 6: Student A2 Authenticates", method: "POST", endpoint: "/users/register & /users/login", badge: "badge-post" },
+      { id: 7, name: "Step 7: Student A2 Books Appointment (T2)", method: "POST", endpoint: "/general/book", badge: "badge-post" },
+      { id: 8, name: "Step 8: [NEW API] Prof P1 Updates Free Slot Timing", method: "PATCH", endpoint: "/professor/availability/:id", badge: "badge-patch", isNew: true },
+      { id: 9, name: "Step 9: Prof P1 Cancels Appointment with Student A1", method: "PATCH", endpoint: "/professor/cancel-appointments/:id", badge: "badge-patch" },
+      { id: 10, name: "Step 10: Student A1 Checks Appointments (Expects 404)", method: "GET", endpoint: "/general/appointments", badge: "badge-get" }
+    ];
+
+    function renderSteps() {
+      const container = document.getElementById("steps-container");
+      container.innerHTML = steps.map(s => `
+        <div class="card" id="card-${s.id}">
+          <div class="step-header">
+            <div class="step-title">
+              <span class="badge ${s.badge}">${s.method}</span>
+              ${s.name}
+              ${s.isNew ? '<span class="badge-new">NEW API</span>' : ''}
+              <span id="badge-status-${s.id}" class="status-code status-waiting">Waiting</span>
+            </div>
+            <button onclick="runSingleStep(${s.id})" style="font-size: 0.8rem; padding: 6px 12px;">Run</button>
+          </div>
+          <div class="endpoint">${s.endpoint}</div>
+          <pre id="output-${s.id}">Click "Run" or "Run Full 10-Step Flow" to execute...</pre>
+        </div>
+      `).join('');
+    }
+
+    function updateStateUI() {
+      document.getElementById("state-a1-id").textContent = state.studentA1_id || "None";
+      document.getElementById("state-a1-token").textContent = state.studentA1_token ? state.studentA1_token.substring(0, 24) + "..." : "None";
+      document.getElementById("state-p1-id").textContent = state.profP1_id || "None";
+      document.getElementById("state-p1-token").textContent = state.profP1_token ? state.profP1_token.substring(0, 24) + "..." : "None";
+      document.getElementById("state-slot-id").textContent = state.free_slot_id || "None";
+      document.getElementById("state-a2-token").textContent = state.studentA2_token ? state.studentA2_token.substring(0, 24) + "..." : "None";
+    }
+
+    function setStepOutput(id, statusCode, data) {
+      const badge = document.getElementById(`badge-status-${id}`);
+      badge.textContent = statusCode;
+      badge.className = `status-code status-${statusCode}`;
+      document.getElementById(`output-${id}`).textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+    }
+
+    async function api(method, path, body = null, token = null) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null
+      });
+      let data;
+      try { data = await res.json(); } catch(e) { data = await res.text(); }
+      return { status: res.status, data };
+    }
+
+    async function runSingleStep(stepNum) {
+      const ts = Date.now();
+      switch (stepNum) {
+        case 1: {
+          const email = `studentA1_${ts}@uni.edu`;
+          await api('POST', '/users/register', { name: "Student A1", email, password: "password123", confirmPassword: "password123", role: "student" });
+          const res = await api('POST', '/users/login', { email, password: "password123" });
+          state.studentA1_token = res.data.token;
+          state.studentA1_id = res.data.id;
+          setStepOutput(1, res.status, res.data);
+          updateStateUI();
+          break;
+        }
+        case 2: {
+          const email = `profP1_${ts}@uni.edu`;
+          await api('POST', '/users/register', { name: "Professor P1", email, password: "password123", confirmPassword: "password123", role: "professor" });
+          const res = await api('POST', '/users/login', { email, password: "password123" });
+          state.profP1_token = res.data.token;
+          state.profP1_id = res.data.id;
+          setStepOutput(2, res.status, res.data);
+          updateStateUI();
+          break;
+        }
+        case 3: {
+          if (!state.profP1_token) return alert("Run Step 2 first!");
+          await api('POST', '/professor/availability', { startTime: "2026-11-20T09:00:00Z", endTime: "2026-11-20T10:00:00Z" }, state.profP1_token);
+          await api('POST', '/professor/availability', { startTime: "2026-11-20T11:00:00Z", endTime: "2026-11-20T12:00:00Z" }, state.profP1_token);
+          const res = await api('POST', '/professor/availability', { startTime: "2026-11-20T14:00:00Z", endTime: "2026-11-20T15:00:00Z" }, state.profP1_token);
+          state.free_slot_id = res.data.availability?._id;
+          setStepOutput(3, res.status, res.data);
+          updateStateUI();
+          break;
+        }
+        case 4: {
+          if (!state.studentA1_token || !state.profP1_id) return alert("Run Steps 1 & 2 first!");
+          const res = await api('GET', `/general/professor/${state.profP1_id}/availability`, null, state.studentA1_token);
+          setStepOutput(4, res.status, res.data);
+          break;
+        }
+        case 5: {
+          if (!state.studentA1_token || !state.profP1_id) return alert("Run Steps 1, 2, and 3 first!");
+          const res = await api('POST', '/general/book', { professorId: state.profP1_id, time: "2026-11-20T09:30:00Z" }, state.studentA1_token);
+          setStepOutput(5, res.status, res.data);
+          break;
+        }
+        case 6: {
+          const email = `studentA2_${ts}@uni.edu`;
+          await api('POST', '/users/register', { name: "Student A2", email, password: "password123", confirmPassword: "password123", role: "student" });
+          const res = await api('POST', '/users/login', { email, password: "password123" });
+          state.studentA2_token = res.data.token;
+          state.studentA2_id = res.data.id;
+          setStepOutput(6, res.status, res.data);
+          updateStateUI();
+          break;
+        }
+        case 7: {
+          if (!state.studentA2_token || !state.profP1_id) return alert("Run Step 6 first!");
+          const res = await api('POST', '/general/book', { professorId: state.profP1_id, time: "2026-11-20T11:30:00Z" }, state.studentA2_token);
+          setStepOutput(7, res.status, res.data);
+          break;
+        }
+        case 8: {
+          if (!state.profP1_token || !state.free_slot_id) return alert("Run Step 3 first!");
+          const res = await api('PATCH', `/professor/availability/${state.free_slot_id}`, { startTime: "2026-11-20T16:00:00Z", endTime: "2026-11-20T17:00:00Z" }, state.profP1_token);
+          setStepOutput(8, res.status, res.data);
+          break;
+        }
+        case 9: {
+          if (!state.profP1_token || !state.studentA1_id) return alert("Run Steps 1 & 2 first!");
+          const res = await api('PATCH', `/professor/cancel-appointments/${state.studentA1_id}`, null, state.profP1_token);
+          setStepOutput(9, res.status, res.data);
+          break;
+        }
+        case 10: {
+          if (!state.studentA1_token) return alert("Run Step 1 first!");
+          const res = await api('GET', '/general/appointments', null, state.studentA1_token);
+          setStepOutput(10, res.status, res.data);
+          break;
+        }
+      }
+    }
+
+    async function runFullFlow() {
+      for (let i = 1; i <= 10; i++) {
+        await runSingleStep(i);
+        await new Promise(r => setTimeout(r, 400));
+      }
+    }
+
+    function resetState() {
+      state.studentA1_id = null;
+      state.studentA1_token = null;
+      state.profP1_id = null;
+      state.profP1_token = null;
+      state.free_slot_id = null;
+      state.studentA2_id = null;
+      state.studentA2_token = null;
+      updateStateUI();
+      renderSteps();
+    }
+
+    renderSteps();
+    updateStateUI();
+  </script>
+</body>
+</html>

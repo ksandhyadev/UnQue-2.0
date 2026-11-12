@@ -5,6 +5,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "path";
+import { fileURLToPath } from "url";
 import { notFound, errorMiddleware } from "./middleware/error.js";
 import userRoutes from "./routes/user.js";
 import professorRoutes from "./routes/proff.js";
@@ -12,19 +14,27 @@ import generalRoutes from "./routes/general.js";
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 app.use(express.json());
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
+// Serve browser dashboard UI
+app.use(express.static(path.join(__dirname, "public")));
+
+// API Routes
 app.use("/users", userRoutes);
 app.use("/professor", professorRoutes);
 app.use("/general", generalRoutes);
+
 app.use(notFound);
 app.use(errorMiddleware);
 
