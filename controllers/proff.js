@@ -64,7 +64,67 @@ const setAvailability = async (req, res, next) => {
 };
 
 
+export const updateAvailability = async (req, res, next) => {
+  try {
+    const { availabilityId } = req.params;
+    const { startTime, endTime } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(availabilityId)) {
+      return next(new HttpError("Invalid availability ID", 400));
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    if (
+      !startTime ||
+      !endTime ||
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      start >= end
+    ) {
+      return next(
+        new HttpError(
+          "Provide valid startTime and endTime; startTime must be before endTime",
+          400
+        )
+      );
+    }
+
+    const slot = await Availability.findOne({
+      _id: availabilityId,
+      professorId: req.user.id,
+    });
+
+    if (!slot) {
+      return next(new HttpError("Availability slot not found", 404));
+    }
+
+    const overlap = await Availability.findOne({
+      _id: { $ne: slot._id },
+      professorId: req.user.id,
+      startTime: { $lt: end },
+      endTime: { $gt: start },
+    });
+
+    if (overlap) {
+      return next(
+        new HttpError("The new time overlaps another availability slot", 409)
+      );
+    }
+
+    slot.startTime = start;
+    slot.endTime = end;
+    await slot.save();
+
+    return res.status(200).json({
+      message: "Availability updated successfully",
+      availability: slot,
+    });
+  } catch (error) {
+    return next(new HttpError("Updating availability failed", 500));
+  }
+};
   const cancelAppointments = async(req,res,next) => {
     try {
       const { studentId } = req.params;  // Student's ID from params

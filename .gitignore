@@ -57,8 +57,9 @@ bower_components/
 *.sln
 *.sw?
 
-# Docker
-Dockerfile
-docker-compose.yml
+# Docker — keep Dockerfile in repo; ignore compose overrides
 docker-compose.override.yml
 docker/
+
+# AWS DocumentDB TLS CA bundle (downloaded at deploy time)
+global-bundle.pem
